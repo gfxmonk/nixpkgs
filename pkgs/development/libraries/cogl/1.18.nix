@@ -1,4 +1,4 @@
-{ stdenv, fetchurl, pkgconfig, mesa_noglu, glib, gdk_pixbuf, xorg, libintlOrEmpty
+{ stdenv, fetchurl, pkgconfig, mesa_noglu, mesa_drivers, glib, gdk_pixbuf, xorg, libintlOrEmpty
 , pangoSupport ? true, pango, cairo, gobjectIntrospection
 , gstreamerSupport ? true, gst_all_1 }:
 
@@ -21,6 +21,7 @@ stdenv.mkDerivation rec {
     "--enable-gles1"
     "--enable-gles2"
     "--enable-kms-egl-platform"
+    "--enable-xlib-egl-platform"
   ] ++ stdenv.lib.optional gstreamerSupport "--enable-cogl-gst";
 
   propagatedBuildInputs = with xorg; [
@@ -31,7 +32,7 @@ stdenv.mkDerivation rec {
     ++ stdenv.lib.optionals gstreamerSupport [ gst_all_1.gstreamer
                                                gst_all_1.gst-plugins-base ];
 
-  buildInputs = stdenv.lib.optionals pangoSupport [ pango cairo ];
+  buildInputs = stdenv.lib.optionals pangoSupport [ pango cairo mesa_drivers ];
 
   COGL_PANGO_DEP_CFLAGS
     = stdenv.lib.optionalString (stdenv.isDarwin && pangoSupport)

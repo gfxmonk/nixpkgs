@@ -21,6 +21,7 @@ stdenv.mkDerivation rec {
     "--enable-gles1"
     "--enable-gles2"
     "--enable-kms-egl-platform"
+    "--enable-xlib-egl-platform"
   ] ++ stdenv.lib.optional gstreamerSupport "--enable-cogl-gst";
 
   propagatedBuildInputs = with xorg; [
