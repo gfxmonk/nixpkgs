@@ -1,4 +1,4 @@
-{ stdenv, fetchurl, libxml2, findXMLCatalogs }:
+{ stdenv, fetchurl, libxml2, findXMLCatalogs, pythonSupport ? false, python }:
 
 stdenv.mkDerivation rec {
   name = "libxslt-1.1.28";
@@ -8,7 +8,8 @@ stdenv.mkDerivation rec {
     sha256 = "13029baw9kkyjgr7q3jccw2mz38amq7mmpr5p3bh775qawd1bisz";
   };
 
-  buildInputs = [ libxml2 ];
+  buildInputs = stdenv.lib.optional pythonSupport python
+    ++ [ libxml2 ];
 
   propagatedBuildInputs = [ findXMLCatalogs ];
 
@@ -16,12 +17,14 @@ stdenv.mkDerivation rec {
 
   configureFlags = [
     "--with-libxml-prefix=${libxml2}"
-    "--without-python"
     "--without-crypto"
     "--without-debug"
     "--without-mem-debug"
     "--without-debugger"
-  ];
+  ] ++ (if pythonSupport
+    then [ "--with-python=${python}" ]
+    else [ "--with-python=no" ] # otherwise build impurity bites us
+  );
 
   meta = {
     homepage = http://xmlsoft.org/XSLT/;
@@ -30,4 +33,8 @@ stdenv.mkDerivation rec {
     platforms = stdenv.lib.platforms.unix;
     maintainers = [ stdenv.lib.maintainers.eelco ];
   };
+} // stdenv.lib.optionalAttrs pythonSupport {
+  # this is a pair of ugly hacks to make python stuff install into the right place
+  preInstall = ''substituteInPlace python/libxml2mod.la --replace "${python}" "$out"'';
+  installFlags = ''pythondir="$(out)/lib/${python.libPrefix}/site-packages"'';
 }
