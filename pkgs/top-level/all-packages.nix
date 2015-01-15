@@ -6393,6 +6393,8 @@ let
 
   libxslt = callPackage ../development/libraries/libxslt { };
 
+  libxslt_python = callPackage ../development/libraries/libxslt { pythonSupport = true; };
+
   libixp_for_wmii = lowPrio (import ../development/libraries/libixp_for_wmii {
     inherit fetchurl stdenv;
   });
@@ -12210,10 +12212,9 @@ let
       kwooty = callPackage ../applications/networking/newsreaders/kwooty { };
     };
 
-  pantheon = recurseIntoAttrs rec {
-    callPackage = newScope pkgs.pantheon;
-    pantheon-terminal = callPackage ../desktops/pantheon/apps/pantheon-terminal { };
-  };
+  pantheon = recurseIntoAttrs (callPackage ../desktops/pantheon {
+    callPackage = pkgs.newScope pkgs.pantheon;
+  });
 
   redshift = callPackage ../applications/misc/redshift {
     inherit (xorg) libX11 libXrandr libxcb randrproto libXxf86vm
