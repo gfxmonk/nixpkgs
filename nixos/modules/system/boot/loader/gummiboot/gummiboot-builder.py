@@ -14,7 +14,7 @@ def copy_if_not_exists(source, dest):
 
 system_dir = lambda generation: "/nix/var/nix/profiles/system-%d-link" % (generation)
 
-def write_entry(generation, kernel, initrd):
+def write_entry(generation, kernel, initrd, xen_efi, xen_params):
     entry_file = "@efiSysMountPoint@/loader/entries/nixos-generation-%d.conf" % (generation)
     generation_dir = os.readlink(system_dir(generation))
     tmp_path = "%s.tmp" % (entry_file)
@@ -25,9 +25,19 @@ def write_entry(generation, kernel, initrd):
         print >> f, "title NixOS"
         print >> f, "version Generation %d" % (generation)
         if machine_id is not None: print >> f, "machine-id %s" % (machine_id)
-        print >> f, "linux %s" % (kernel)
-        print >> f, "initrd %s" % (initrd)
-        print >> f, "options %s" % (kernel_params)
+        if xen_efi is not None:
+            print >> f, "efi %s" % (xen_efi)
+            cfg_path = xen_efi[:-3] + 'cfg'
+            with open("@efiSysMountPoint@" + cfg_path, 'w') as cfg:
+                print >> cfg, "[global]"
+                print >> cfg, "[xen]"
+                print >> cfg, "kernel=%s boot.shell_on_fail %s" % (os.path.basename(kernel), kernel_params)
+                print >> cfg, "ramdisk=%s" % (os.path.basename(initrd))
+                print >> cfg, "options=log_lvl=all guest_loglvl=all %s" % (xen_params)
+        else:
+            print >> f, "linux %s" % (kernel)
+            print >> f, "initrd %s" % (initrd)
+            print >> f, "options %s" % (kernel_params)
     os.rename(tmp_path, entry_file)
 
 def write_loader_conf(generation):
@@ -46,10 +56,34 @@ def copy_from_profile(generation, name, dry_run=False):
         copy_if_not_exists(store_file_path, "@efiSysMountPoint@%s" % (efi_file_path))
     return efi_file_path
 
+def copy_efi_from_profile(generation, name, dry_run=False):
+    try:
+        store_file_path = os.readlink("%s/%s" % (system_dir(generation), name))
+        # store_cfg_path = os.readlink("%s/%s" % (system_dir(generation), name))
+    except OSError as e:
+        import errno
+        if e.errno == errno.ENOENT:
+            return None
+        raise
+    suffix = os.path.basename(store_file_path)
+    store_dir = store_file_path.replace('/','-')
+    efi_file_path = "/efi/nixos/%s-%s" % (store_dir, suffix)
+    # store_cfg_path = store_file_path[:-3] + 'cfg'
+    # cfg_file_path = efi_file_path[:-3] + 'cfg'
+    if not dry_run:
+        copy_if_not_exists(store_file_path, "@efiSysMountPoint@%s" % (efi_file_path))
+        # copy_if_not_exists(store_cfg_path, "@efiSysMountPoint@%s" % (cfg_file_path))
+    return efi_file_path
+
 def add_entry(generation):
     efi_kernel_path = copy_from_profile(generation, "kernel")
     efi_initrd_path = copy_from_profile(generation, "initrd")
-    write_entry(generation, efi_kernel_path, efi_initrd_path)
+    efi_xen_path = copy_efi_from_profile(generation, "xen.efi")
+    xen_params = None
+    if efi_xen_path is not None:
+        with open("%s/%s" % (system_dir(generation), "xen-params")) as f:
+            xen_params = f.read().strip()
+    write_entry(generation, efi_kernel_path, efi_initrd_path, efi_xen_path, xen_params)
 
 def mkdir_p(path):
     try:

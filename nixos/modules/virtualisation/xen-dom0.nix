@@ -101,10 +101,12 @@ in
     assertions = [ {
       assertion = pkgs.stdenv.isx86_64;
       message = "Xen currently not supported on ${pkgs.stdenv.system}";
-    } {
-      assertion = config.boot.loader.grub.enable && (config.boot.loader.grub.efiSupport == false);
-      message = "Xen currently does not support EFI boot";
-    } ];
+    }
+    # {
+    #   assertion = config.boot.loader.grub.enable && (config.boot.loader.grub.efiSupport == false);
+    #   message = "Xen currently does not support EFI boot";
+    # }
+    ];
 
     virtualisation.xen.stored = mkDefault "${pkgs.xen}/bin/oxenstored";
 
@@ -146,6 +148,9 @@ in
       ''
         ln -s ${pkgs.xen}/boot/xen.gz $out/xen.gz
         echo "${toString cfg.bootParams}" > $out/xen-params
+
+        ln -s ${pkgs.xen}/lib/efi/xen.efi $out/xen.efi
+        echo "${toString cfg.bootParams}" > $out/xen.cfg
       '';
 
     # Mount the /proc/xen pseudo-filesystem.

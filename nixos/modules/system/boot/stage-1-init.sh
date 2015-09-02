@@ -56,6 +56,8 @@ echo
 echo "[1;32m<<< NixOS Stage 1 >>>[0m"
 echo
 
+set -x
+
 
 # Mount special file systems.
 mkdir -p /etc/udev
@@ -144,6 +146,7 @@ echo "running udev..."
 mkdir -p /etc/udev
 ln -sfn @udevRules@ /etc/udev/rules.d
 mkdir -p /dev/.mdadm
+# export SYSTEMD_LOG_TARGET=console
 systemd-udevd --daemon
 udevadm trigger --action=add
 udevadm settle || true

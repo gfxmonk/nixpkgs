@@ -7,6 +7,7 @@
 , spice_protocol, usbredir, alsaLib, quilt
 , coreutils, gawk, gnused, gnugrep, diffutils, multipath_tools
 , inetutils, iptables, openvswitch, nbd, drbd, xenConfig
+, binutils
 , xenserverPatched ? false, ... }:
 
 with stdenv.lib;
@@ -53,6 +54,11 @@ let
   scriptEnvPath = stdenv.lib.concatStrings (stdenv.lib.intersperse ":" (map (x: "${x}/bin")
     [ coreutils gawk gnused gnugrep which perl diffutils utillinux multipath_tools
       iproute inetutils iptables bridge-utils openvswitch nbd drbd ]));
+
+  binutils-efi = overrideDerivation binutils (o: {
+    # create a binutils which supports 64-bit efi target
+    configureFlags = o.configureFlags ++ ["--enable-targets=x86_64-pep"];
+  });
 in
 
 
@@ -71,6 +77,7 @@ stdenv.mkDerivation {
       checkpolicy pythonPackages.markdown transfig
       glusterfs acl cmake spice spice_protocol usbredir
       alsaLib quilt
+      binutils-efi
     ];
 
   pythonPath = [ pythonPackages.curses ];
@@ -104,7 +111,7 @@ stdenv.mkDerivation {
         --replace /usr/sbin/vgs ${lvm2}/sbin/vgs \
         --replace /usr/sbin/lvs ${lvm2}/sbin/lvs
 
-      substituteInPlace tools/hotplug/Linux/network-bridge \
+      substituteInPlace tools/hotplug/Linux/logging.sh \
         --replace /usr/bin/logger ${utillinux}/bin/logger
 
       substituteInPlace tools/xenmon/xenmon.py \
@@ -113,8 +120,8 @@ stdenv.mkDerivation {
       substituteInPlace tools/xenstat/Makefile \
         --replace /usr/include/curses.h ${ncurses}/include/curses.h
 
-      substituteInPlace tools/ioemu-qemu-xen/xen-hooks.mak \
-        --replace /usr/include/pci ${pciutils}/include/pci
+      # substituteInPlace tools/ioemu-qemu-xen/xen-hooks.mak \
+      #   --replace /usr/include/pci ${pciutils}/include/pci
 
       substituteInPlace tools/hotplug/Linux/xen-backend.rules \
         --replace /etc/xen/scripts $out/etc/xen/scripts
@@ -127,17 +134,17 @@ stdenv.mkDerivation {
       substituteInPlace xen/Makefile \
         --replace '$(CC) $(CFLAGS) -v' '$(CC) -v'
 
-      substituteInPlace tools/python/xen/xend/server/BlktapController.py \
-        --replace /usr/sbin/tapdisk2 $out/sbin/tapdisk2
+      # substituteInPlace tools/python/xen/xend/server/BlktapController.py \
+      #   --replace /usr/sbin/tapdisk2 $out/sbin/tapdisk2
 
-      substituteInPlace tools/python/xen/xend/XendQCoWStorageRepo.py \
-        --replace /usr/sbin/qcow-create $out/sbin/qcow-create
+      # substituteInPlace tools/python/xen/xend/XendQCoWStorageRepo.py \
+      #   --replace /usr/sbin/qcow-create $out/sbin/qcow-create
 
-      substituteInPlace tools/python/xen/remus/save.py \
-        --replace /usr/lib/xen/bin/xc_save $out/${libDir}/xen/bin/xc_save
+      # substituteInPlace tools/python/xen/remus/save.py \
+      #   --replace /usr/lib/xen/bin/xc_save $out/${libDir}/xen/bin/xc_save
 
-      substituteInPlace tools/python/xen/remus/device.py \
-        --replace /usr/lib/xen/bin/imqebt $out/${libDir}/xen/bin/imqebt
+      # substituteInPlace tools/python/xen/remus/device.py \
+      #   --replace /usr/lib/xen/bin/imqebt $out/${libDir}/xen/bin/imqebt
 
       # Allow the location of the xendomains config file to be
       # overriden at runtime.
@@ -191,6 +198,7 @@ stdenv.mkDerivation {
       cp -prvd dist/install/nix/store/*/* $out/
       cp -prvd dist/install/boot $out/boot
       cp -prvd dist/install/etc $out
+      cp -prvd dist/install/usr/lib* $out
       cp -dR docs/man1 docs/man5 $out/share/man/
       wrapPythonPrograms
       substituteInPlace $out/etc/xen/scripts/hotplugpath.sh --replace SBINDIR=\"$out/sbin\" SBINDIR=\"$out/bin\"

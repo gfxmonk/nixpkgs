@@ -16,8 +16,7 @@ index 45ca59c..faf8951 100644
 -        default n
 +        default y
          help
-             Use 32bit PIO accesses on ATA (minor optimization on PCI 
-transfers).
+             Use 32bit PIO accesses on ATA (minor optimization on PCI transfers).
      config AHCI
 -- 
 1.7.10.4
