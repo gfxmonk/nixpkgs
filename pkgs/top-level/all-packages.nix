@@ -17484,6 +17484,10 @@ in
     nix-prefetch-zip
     nix-prefetch-scripts;
 
+  nix-prefetch-source = callPackage ../build-support/fetchsource/default.nix {};
+
+  importSource = pkgs.nix-prefetch-source.import;
+
   nix-template-rpm = callPackage ../build-support/templaterpm { inherit (pythonPackages) python toposort; };
 
   nix-repl = callPackage ../tools/package-management/nix-repl { };
