@@ -77,6 +77,12 @@ stdenv.mkDerivation rec {
       url = "https://git.musl-libc.org/cgit/musl/patch/?id=751bee0ee727e8d8b003c87cff77ac76f1dbecd6";
       sha256 = "sha256-qCw132TCSaZrkISmtDb8Q8ufyt8sAJdwACkvfwuoi/0=";
     })
+
+    # fix issue #285141, installed symlinks are unreadable on darwin
+    (fetchurl {
+      url = "https://github.com/timbertson/musl/compare/f314e133929b6379eccc632bef32eaebb66a7335...05b89f783fd1873ce9ec1127fa76d002921caa23.patch";
+      sha256 = "sha256-DeZE4HvPNxmFKKttAPOBGEBPo8l3QHvACaW067iiJ9g=";
+    })
   ];
   CFLAGS = [ "-fstack-protector-strong" ]
     ++ lib.optional stdenv.hostPlatform.isPower "-mlong-double-64";
